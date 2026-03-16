@@ -34,8 +34,9 @@ def read_root():
 #    - Example: /books?author=Orwell
 @app.get("/books", response_model=List[Book])
 def get_books(author: Optional[str] = Query(None)):
-    # Your code here
-    pass
+    if author:
+        return [book for book in books_db if book["author"] == author]
+    return books_db
 
 # TODO: Implement the POST /books endpoint
 # Requirements:
@@ -45,8 +46,20 @@ def get_books(author: Optional[str] = Query(None)):
 # 4. Return the created book object.
 @app.post("/books", response_model=Book)
 def create_book(book: BookCreate):
-    # Your code here
-    pass
+    if books_db:
+        new_id = max(b["id"] for b in books_db) + 1
+    else:
+        new_id = 1
+
+    new_book = {
+        "id": new_id,
+        "title": book.title,
+        "author": book.author,
+        "year": book.year
+    }
+
+    books_db.append(new_book)
+    return new_book
 
 # TODO: Implement the GET /books/{book_id} endpoint
 # Requirements:
@@ -54,8 +67,11 @@ def create_book(book: BookCreate):
 # 2. If the book is not found, raise an HTTPException with status code 404.
 @app.get("/books/{book_id}", response_model=Book)
 def get_book(book_id: int):
-    # Your code here
-    pass
+    for book in books_db:
+        if book["id"] == book_id:
+            return book
+
+    raise HTTPException(status_code=404, detail="Book not found")
 
 # TODO: Implement the PUT /books/{book_id} endpoint
 # Requirements:
@@ -64,8 +80,14 @@ def get_book(book_id: int):
 # 3. Return the updated book.
 @app.put("/books/{book_id}", response_model=Book)
 def update_book(book_id: int, book_update: BookCreate):
-    # Your code here
-    pass
+    for book in books_db:
+        if book["id"] == book_id:
+            book["title"] = book_update.title
+            book["author"] = book_update.author
+            book["year"] = book_update.year
+            return book
+
+    raise HTTPException(status_code=404, detail="Book not found")
 
 # TODO: Implement the DELETE /books/{book_id} endpoint
 # Requirements:
@@ -74,8 +96,12 @@ def update_book(book_id: int, book_update: BookCreate):
 # 3. Return a success message or the deleted book.
 @app.delete("/books/{book_id}")
 def delete_book(book_id: int):
-    # Your code here
-    pass
+    for i, book in enumerate(books_db):
+        if book["id"] == book_id:
+            books_db.pop(i)
+            return {"message": "Book deleted"}
+
+    raise HTTPException(status_code=404, detail="Book not found")
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
